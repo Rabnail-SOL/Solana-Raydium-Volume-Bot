@@ -26,7 +26,3 @@ export const SLIPPAGE = Number(retrieveEnvVariable('SLIPPAGE'))
 export const FEE_LEVEL = Number(retrieveEnvVariable('FEE_LEVEL'))
 
 export const TOKEN_MINT = retrieveEnvVariable('TOKEN_MINT')
-export const POOL_ID = retrieveEnvVariable('POOL_ID', '')
-
-export const GATHER_TO_OTHER_ADDRESS = retrieveEnvVariable('GATHER_TO_OTHER_ADDRESS', 'false') === 'true'
-export const GATHER_ADDRESS = retrieveEnvVariable('GATHER_ADDRESS', '')

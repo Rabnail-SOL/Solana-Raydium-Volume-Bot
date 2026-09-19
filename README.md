@@ -47,8 +47,6 @@ npm run build      # Compile to dist/
 | `TOKEN_MINT` | Target token mint |
 | `JITO_MODE` | `true` to use Jito bundles |
 | `JITO_FEE` | Jito tip in SOL |
-| `GATHER_TO_OTHER_ADDRESS` | Send gathered funds elsewhere |
-| `GATHER_ADDRESS` | Alternate gather destination |
 
 ## Project Structure
 

@@ -18,7 +18,7 @@ import {
 } from '@solana/web3.js'
 import { SPL_ACCOUNT_LAYOUT, TokenAccount } from '@raydium-io/raydium-sdk'
 import base58 from 'bs58'
-import { GATHER_ADDRESS, GATHER_TO_OTHER_ADDRESS, PRIVATE_KEY } from './constants'
+import { PRIVATE_KEY } from './constants'
 import { connection } from './executor/legacy'
 import { execute } from './executor/legacy'
 import { readJson, saveNewFile, sleep } from './utils'
@@ -28,9 +28,6 @@ const mainKp = Keypair.fromSecretKey(base58.decode(PRIVATE_KEY))
 const TOKEN_PROGRAMS = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]
 const WALLET_STAGGER_MS = 500
 const PRIORITY_FEE_MICROLAMPORTS = 300_000
-
-const gatherDestination = (): PublicKey =>
-  GATHER_TO_OTHER_ADDRESS ? new PublicKey(GATHER_ADDRESS) : mainKp.publicKey
 
 async function getAllTokenAccounts(owner: PublicKey): Promise<TokenAccount[]> {
   const accounts: TokenAccount[] = []
@@ -72,8 +69,7 @@ async function buildGatherInstructions(
   tokenAccounts: TokenAccount[],
 ): Promise<TransactionInstruction[]> {
   const ixs: TransactionInstruction[] = []
-  const destination = gatherDestination()
-  const closeRentDestination = GATHER_TO_OTHER_ADDRESS ? destination : mainKp.publicKey
+  const destination = mainKp.publicKey
 
   for (const acc of tokenAccounts) {
     const mint = acc.accountInfo.mint
@@ -112,7 +108,7 @@ async function buildGatherInstructions(
       )
     }
 
-    ixs.push(createCloseAccountInstruction(tokenAccount, closeRentDestination, kp.publicKey, [], tokenProgram))
+    ixs.push(createCloseAccountInstruction(tokenAccount, mainKp.publicKey, kp.publicKey, [], tokenProgram))
   }
 
   const lamportsToTransfer = await connection.getBalance(kp.publicKey, 'confirmed')
@@ -182,13 +178,7 @@ async function processWallet(kp: Keypair, index: number): Promise<void> {
 }
 
 const main = async () => {
-  if (GATHER_TO_OTHER_ADDRESS && !GATHER_ADDRESS) {
-    console.error('GATHER_ADDRESS is required when GATHER_TO_OTHER_ADDRESS=true')
-    process.exit(1)
-  }
-
   console.log(`Main wallet: ${mainKp.publicKey.toBase58()}`)
-  console.log(`Gather destination: ${gatherDestination().toBase58()}`)
 
   const walletsData = readJson()
   if (walletsData.length === 0) {
