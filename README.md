@@ -1,94 +1,66 @@
+# Solana Raydium Volume Bot V2
 
-# Raydium Volume Bot Version 2
+TypeScript volume bot that distributes SOL to sub-wallets, runs double-buy + sell cycles via **Jupiter Lite API**, then sweeps SOL back to the main wallet.
 
-Solana volume bot: This bot is designed to automate the distribution of SOL to multiple wallets and execute endless buy and sell swap transactions simultaneously on the Raydium platform. It leverages Solana's blockchain technology to perform these operations efficiently.
+## Features
 
-#### This bot is built version and original version can be purchased by contacting me. Additional update like jito mode and other features can be done at any time with requirment
+- Automated SOL distribution to fresh wallets each round
+- Double buy (random % of wallet SOL) + single sell per wallet
+- Jupiter swap via `lite-api.jup.ag/swap/v1` (stable HTTP API)
+- Optional Jito bundle mode
+- Full `gather` script: sell tokens, close ATAs (SPL + Token-2022), sweep SOL
+- Main wallet pays gather fees; staggered wallet processing to reduce RPC rate limits
 
-## 🔧 Last Version's Demerits
-- ❌ **Repetitive buy and sell with one wallet**: The last version of the Raydium Volume Bot used fixed wallets, so it was apparent on DexScreener that some wallets performed repetitive buy and sell actions.
-- ❌ **No increase in the number of makers**: It didn't increase the number of pool makers, only the volume.
-- ❌ **Gathering token instead of SOL**: When gathering, if there were tokens left, it didn't sell them before gathering. Instead, it just gathered tokens to the main wallet.
-- ❌ **Equal number of buys and sells**: One-time buy and one-time sell actions left sell pressure at the end, as there was always a sell at the end of the volume operation.
+## Setup
 
-## 🚀 Improvements
-- ✅ **Transferring SOL to new wallet**: After buying and selling in one wallet, it transfers SOL to a newly created wallet and continues buying and selling there.
-- ✅ **Maker increase**: New wallets are created every round of buying and selling, increasing the number of makers.
-- ✅ **Sell before gather**: When gathering, if there are tokens left in the wallet, it sells the tokens first and gathers only SOL (the token account rent of 0.00203 SOL is reclaimed).
-- ✅ **More buys than sells**: It randomly buys twice with SOL in the wallet and sells all tokens after some time, making the number of buys twice as many as sells, thus creating more buy pressure.
-
-## This release version is for demo, so buy and sell amount with SOL is fixed at 0.003SOL, you can ask me for a gather script if you get to need that
-
-## 🌟 Features
-- ⚙️ **Automated SOL Distribution**: Distributes SOL to new wallets.
-- 🔄 **Endless Buy and Sell Swaps**: Performs simultaneous buy and sell transactions.
-- 🚀 **Swap with Jupiter V6**: Swap is performed with Jupiter V6 swap aggregator.
-- 🛠️ **Configurable Parameters**: Allows customization of buy amounts, intervals, distribution settings, and more.
-
-### Live running video of this volume bot is here
-https://github.com/user-attachments/assets/77d00b0a-e455-4fc1-b5c6-380fdd12a5fe
-
-
-## 📋 Environment Variables
-
-The bot uses the following environment variables. Rename the `.env.copy` file to `.env` and set the necessary variables.
-
-```env
-PRIVATE_KEY=                 # Private key for the main wallet
-RPC_ENDPOINT=                # RPC endpoint for Solana
-RPC_WEBSOCKET_ENDPOINT=      # RPC WebSocket endpoint for Solana
-
-####### BUY SETTING #######
-BUY_UPPER_PERCENT=60         # Higher percent limit of SOL that can be used to buy token in wallet
-BUY_LOWER_PERCENT=30         # Lower percent limit of SOL (30 means, it buys with larger than 30% of SOL in wallet when buy)
-
-BUY_INTERVAL_MAX=30          # Upper limit of seconds to wait after second buy
-BUY_INTERVAL_MIN=2           # Lower limit of seconds (it waits from 2 to 30 secs after second buy before second buy)
-
-SELL_INTERVAL_MAX=30         # Upper limit of seconds to wait after sell
-SELL_INTERVAL_MIN=3          # Lower limit of seconds (it waits from 2 to 30 secs after sell to transfer SOL)
-
-DISTRIBUTE_WALLET_NUM=4      # Number of wallets that run in parallel which makes volume (max: 20)
-
-SLIPPAGE=50                  # Slippage in percent
-
-TOKEN_MINT=7MFX5LySd9CdaD8irWnLLKanpDw6gxbBuhEg3qCHWc4C   # Mint address of token to increase volume
-```
-
-#  🚀 Usage
-### 1. Clone the repository
-```
-git clone https://github.com/Rabnail-SOL/Solana-Raydium-Volume-Bot.git
-cd Raydium-Volume-Bot-V2
-```
-### 2. Install dependencies
-```
+```bash
 npm install
-```
-### 3. Configure the environment variables
-
-Rename the .env.copy file to .env and set RPC and WSS, main keypair's secret key and other variables.
-
-### 4. Run the bot
-
-```
-npm start
+cp .env.example .env
+# Edit .env with your RPC, private key, and token mint
 ```
 
-### 5. Gather the funds from distributed wallets
+## Usage
+
+```bash
+npm start          # Run volume bot
+npm run gather     # Recover funds from data.json wallets
+npm run bal        # Check main + sub-wallet balances
+npm run typecheck  # TypeScript check
+npm run build      # Compile to dist/
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `PRIVATE_KEY` | Main wallet base58 secret key |
+| `RPC_ENDPOINT` | Solana HTTP RPC |
+| `RPC_WEBSOCKET_ENDPOINT` | Solana WebSocket RPC |
+| `BUY_UPPER_PERCENT` / `BUY_LOWER_PERCENT` | Random buy sizing (% of wallet SOL) |
+| `BUY_INTERVAL_MIN` / `BUY_INTERVAL_MAX` | Seconds between first and second buy |
+| `SELL_INTERVAL_MIN` / `SELL_INTERVAL_MAX` | Seconds before sell |
+| `DISTRIBUTE_WALLET_NUM` | Parallel wallets per round (max 20) |
+| `SOL_AMOUNT_TO_DISTRIBUTE` | Total SOL split across wallets per round |
+| `DISTRIBUTE_INTERVAL_MIN` / `DISTRIBUTE_INTERVAL_MAX` | Seconds between rounds |
+| `SLIPPAGE` | Jupiter slippage in bps (50 = 0.5%) |
+| `FEE_LEVEL` | Priority fee multiplier |
+| `TOKEN_MINT` | Target token mint |
+| `JITO_MODE` | `true` to use Jito bundles |
+| `JITO_FEE` | Jito tip in SOL |
+| `GATHER_TO_OTHER_ADDRESS` | Send gathered funds elsewhere |
+| `GATHER_ADDRESS` | Alternate gather destination |
+
+## Project Structure
 
 ```
-npm run gather
+├── index.ts              # Volume bot main loop
+├── gather.ts             # Fund recovery
+├── bal.ts                # Balance checker
+├── constants/            # Env configuration
+├── executor/             # legacy + Jito tx execution
+└── utils/                # Jupiter swap + file helpers
 ```
 
+## License
 
-# 👤 Author
-
-### Discord: rabnail_15 in discord
-
-### Twitter: [@Rabnail_SOL](https://twitter.com/Rabnail_SOL)   
-
-### Telegram: [@Rabnail_SOL](https://t.me/Rabnail_SOL)   
-
-
-You can always find me here, for help, or for other projects.
+MIT
